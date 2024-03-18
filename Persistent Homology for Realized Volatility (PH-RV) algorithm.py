@@ -17,16 +17,35 @@ import persim
 
 import matplotlib.pyplot as plt
 
-# Using Yahoo Finance's API
-# define index names: E.g. ^GSPC = S&P 500, ^DJI = DOW Jones, ^RUT = Russell 2000
-index_names = ['^GSPC', '^DJI', '^RUT']
+import os, pickle, base64
 
-# define date range: E.g from 2000-01-01 until 2022-03-30
-start_date_string = "2000-01-01"
-end_date_string = "2022-03-30"
+# index names: e.g. ^GSPC = S&P 500, ^DJI = DOW Jones, ^RUT = Russell 2000
+def fetch_raw_data(
+        index_names = ['^GSPC', '^DJI', '^RUT'],
+        start_date_string = "2000-01-01",
+        end_date_string = "2022-03-30"):
 
-# pull data from yahoo finance
-raw_data = yf.download(index_names, start=start_date_string, end=end_date_string)
+    cache_name = '+'.join(sorted(index_names)) + f'+{start_date_string}+{end_date_string}'
+    cache_name = base64.b64encode(bytes(cache_name, 'utf8'), b'+-')
+    cache_name = cache_name + b'.pickle'
+    cache_name = cache_name.decode('utf8')
+
+    if os.path.exists(cache_name):
+        print('* cache hit')
+        with open(cache_name, 'rb') as file:
+            raw_data = pickle.load(file)
+    else:
+        print('* fetching data from yahoo finance')
+        raw_data = yf.download(index_names, start=start_date_string, end=end_date_string)
+        with open(cache_name, 'wb') as file:
+            pickle.dump(raw_data, file)
+
+    return raw_data
+
+raw_data = fetch_raw_data()
+print(raw_data)
+
+exit()
 
 #Using own stock data in Excel
 #raw_data = pd.read_excel("Doc.xlsx", index_col='Date')
